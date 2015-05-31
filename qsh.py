@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+import sys
 import json
 import stat
 import argparse
@@ -126,4 +127,4 @@ if __name__ == '__main__':
 	with tempfile.NamedTemporaryFile(delete=True) as f:
 		f.write(contents) and f.flush()
 		os.chmod(f.name, stat.S_IRUSR|stat.S_IXUSR)
-		subprocess.call([ f.name ] + arguments)
+		subprocess.call([ f.name ] + arguments, stdin=sys.stdin)
