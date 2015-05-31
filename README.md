@@ -32,6 +32,7 @@ Then, you can do this:
 
     # Get a copy of quish
     $ wget https://raw.githubusercontent.com/zenoamaro/quish/master/qsh.py
+    $ chmod +x qsh.py
 
 	$ ./qsh YourGitUsername/my-script
 	This is a useful script.
