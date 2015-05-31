@@ -57,6 +57,13 @@ def find_file_in_gists(gists, target):
 
 
 def parse_user_script_path(path):
+	"""
+	Parses a script path into its components.
+
+	>>> parse_user_script_path('user/script-name.sh') \
+	    == { 'filename':'script-name.sh', 'username':'user' }
+	True
+	"""
 	match = match_user_script_path.match(path)
 	if not match: raise ValueError('Invalid script path, `{}`.'.format(path))
 	return match.groupdict()
@@ -65,6 +72,9 @@ def parse_user_script_path(path):
 def filename_matches(a, b):
 	"""
 	Tries to matches two filenames exactly, then by basename.
+
+	>>> filename_matches('file', 'file.sh')
+	True
 	"""
 	return (a == b) \
 	    or (basename(a) == basename(b))
@@ -73,8 +83,15 @@ def filename_matches(a, b):
 def basename(filename):
 	"""
 	Returns a filename without the extension.
+
+	>>> basename('file.sh')
+	'file'
+
+	>>> basename('.file')
+	'.file'
 	"""
-	return filename.rsplit('.', 1)[0]
+	return filename.rsplit('.', 1)[0]\
+	    or filename
 
 
 def request(method, url, params=None, data=None):
@@ -97,6 +114,8 @@ if __name__ == '__main__':
 	args = arg_parser.parse_args()
 	script = parse_user_script_path(args.script)
 	contents = fetch_user_script(script['username'], script['filename'])
+	# Store the contents to a named temporary file and make it
+	# executable so that it is callable with subprocess.
 	with tempfile.NamedTemporaryFile(delete=True) as f:
 		f.write(contents) and f.flush()
 		os.chmod(f.name, stat.S_IRUSR|stat.S_IXUSR)
