@@ -65,7 +65,7 @@ def cached(resource, max_age=DEFAULT_CACHE_TIMEOUT):
 				pass
 			# Try to return a cached resource if it exists
 			# and is not older than `max_age`.
-			try: 
+			try:
 				mtime = os.path.getmtime(path)
 				mtime = datetime.fromtimestamp(mtime)
 			except FileNotFoundError:
@@ -182,7 +182,7 @@ def request(method, url, params=None, data=None, headers=None):
 			'text': text_content,
 			'json': json_content,
 		}
-			
+
 
 if __name__ == '__main__':
 	args = arg_parser.parse_args()
@@ -191,7 +191,12 @@ if __name__ == '__main__':
 	arguments = args.arguments or []
 	# Store the contents to a named temporary file and make it
 	# executable so that it is callable with subprocess.
-	with tempfile.NamedTemporaryFile(delete=True) as f:
-		f.write(contents.encode('utf-8')) and f.flush()
-		os.chmod(f.name, stat.S_IRUSR|stat.S_IXUSR)
+	try:
+		f = tempfile.NamedTemporaryFile(delete=False)
+		f.write(contents.encode('utf-8')) and f.close()
+		os.chmod(f.name, stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR)
 		subprocess.call([ f.name ] + arguments, stdin=sys.stdin)
+	finally:
+		f.close()
+		os.remove(f.name)
+		
