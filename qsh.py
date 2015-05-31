@@ -44,11 +44,16 @@ arg_parser.add_argument(
 
 def cached(resource, max_age=DEFAULT_CACHE_TIMEOUT):
 	"""
-	Stores named content in the cache directory.
+	Caches a function call to disk with a resource name
+	and optional `max_age` of expiration.
+
+	The resource will be stored inside the quish cache directory, and
+	will be keyed with the `resource` name plus the call *args.
 	"""
 	def wrapper(func):
 		@wraps(func)
 		def inner(*args, **kwargs):
+			# Obtain the final resource path.
 			path = '__'.join(map(str, (resource,) + args))
 			path = os.path.join(QUISH_CACHE_DIR, path)
 			path = os.path.expanduser(path)
