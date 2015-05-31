@@ -20,11 +20,17 @@ match_user_script_path = re.compile(r"""
 
 
 arg_parser = argparse.ArgumentParser(
-	description="Runs a script from a user's gists."
+	description="Runs a script from a user's gists.",
 )
 
 arg_parser.add_argument(
-	'script', help='A path to a script in the form `user/filename`.'
+	'script', help='A path to a script in the form `user/filename`.',
+)
+
+arg_parser.add_argument(
+	'arguments', help='Arguments passed to the script as-is.',
+	             metavar='arguments...',
+	             nargs=argparse.REMAINDER,
 )
 
 
@@ -114,9 +120,10 @@ if __name__ == '__main__':
 	args = arg_parser.parse_args()
 	script = parse_user_script_path(args.script)
 	contents = fetch_user_script(script['username'], script['filename'])
+	arguments = args.arguments or []
 	# Store the contents to a named temporary file and make it
 	# executable so that it is callable with subprocess.
 	with tempfile.NamedTemporaryFile(delete=True) as f:
 		f.write(contents) and f.flush()
 		os.chmod(f.name, stat.S_IRUSR|stat.S_IXUSR)
-		subprocess.call([ f.name ])
+		subprocess.call([ f.name ] + arguments)
