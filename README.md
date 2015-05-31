@@ -64,7 +64,6 @@ Roadmap
 -------
   - Installation and testing using `setup.py`
   - Compatibility with Python 2.7
-  - Caching of gists lists and scripts
   - Local username for shorter invocation
   - GitHub API Authentication
 
