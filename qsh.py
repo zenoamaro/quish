@@ -5,13 +5,20 @@ import re
 import sys
 import json
 import stat
+import time
 import argparse
 import tempfile
 import subprocess
-import urllib.request
 import urllib.parse
+import urllib.request
+from functools import wraps
+from datetime import datetime
 
-GISTS_PER_PAGE = 100
+QUISH_STORAGE_DIR     = '~/.quish'
+QUISH_CONF_FILE       = '~/.quish/quish.conf'
+QUISH_CACHE_DIR       = '~/.quish/cache'
+DEFAULT_CACHE_TIMEOUT = 3600
+GISTS_PER_PAGE        = 100
 
 match_user_script_path = re.compile(r"""
 	(?P<username>[\w\d]+)
@@ -35,22 +42,59 @@ arg_parser.add_argument(
 )
 
 
+def cached(resource, max_age=DEFAULT_CACHE_TIMEOUT):
+	"""
+	Stores named content in the cache directory.
+	"""
+	def wrapper(func):
+		@wraps(func)
+		def inner(*args, **kwargs):
+			path = '__'.join(map(str, (resource,) + args))
+			path = os.path.join(QUISH_CACHE_DIR, path)
+			path = os.path.expanduser(path)
+			basedir = os.path.dirname(path)
+			# Make the full required directory structure.
+			try:
+				os.makedirs(basedir)
+			except:
+				pass
+			# Try to return a cached resource if it exists
+			# and is not older than `max_age`.
+			try: 
+				mtime = os.path.getmtime(path)
+				mtime = datetime.fromtimestamp(mtime)
+			except FileNotFoundError:
+				mtime = None
+			if mtime and (datetime.now() - mtime).seconds < max_age:
+				with open(path, 'r', encoding='utf-8') as f:
+					return f.read()
+			# No dice, calculate the result and cache.
+			results = func(*args, **kwargs)
+			with open(path, 'w', encoding='utf-8') as f:
+				f.write(results)
+			return results
+		return inner
+	return wrapper
+
+
+@cached('script')
 def fetch_user_script(username, filename):
 	"""
 	Searches for a gist containing the given file name.
 	"""
-	gists = fetch_user_gists(username)
+	gists = json.loads(fetch_user_gists(username))
 	gistfile = find_file_in_gists(gists, filename)
 	return request('get', gistfile['raw_url']).get('text')
 
 
+@cached('gists')
 def fetch_user_gists(username, page=1):
 	"""
 	Returns a list of gists for a given user.
 	"""
 	url = 'https://api.github.com/users/{user}/gists'.format(user=username)
 	params = { 'page': page, 'per_page': GISTS_PER_PAGE }
-	return request('get', url, params=params).get('json')
+	return request('get', url, params=params).get('text')
 
 
 def find_file_in_gists(gists, target):
